@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MUMU READ-HOTMAIL | ระบบค้นหาและจัดการอีเมล</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lavender: {
+              50: '#fbf8ff',
+              100: '#f3e8ff',
+              200: '#e9d5ff',
+              300: '#d8b4fe',
+              400: '#c084fc',
+              500: '#a855f7',
+              600: '#9333ea',
+              700: '#7e22ce',
+              800: '#6b21a8',
+              900: '#581c87',
+            }
+          },
+          fontFamily: {
+            kanit: ['Kanit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+    .lavender-gradient {
+      background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%);
+    }
+    .card-glow {
+      box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.15), 0 8px 10px -6px rgba(168, 85, 247, 0.1);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f3e8ff; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #c084fc; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a855f7; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-lavender-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-lavender-500 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-lavender-200">
+          <i class="fa-solid fa-envelope-open-text"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-lavender-700 to-purple-600">
+            MUMU READ-HOTMAIL
+          </h1>
+          <p class="text-xs text-slate-500">ระบบจัดการและส่งมอบบัญชี Hotmail / Outlook</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <a href="https://read-mail.me/" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-lavender-100 text-lavender-700 hover:bg-lavender-200 font-medium text-sm transition-all shadow-sm border border-lavender-200">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          <span>ไปที่เว็บอ่านเมล (read-mail.me)</span>
+        </a>
+        
+        <button id="adminToggleBtn" onclick="toggleAdminModal()" 
+                class="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-lavender-100 hover:text-lavender-700 transition-all font-medium text-sm flex items-center gap-1.5 border border-slate-200">
+          <i class="fa-solid fa-user-gear"></i>
+          <span class="hidden sm:inline">โหมดแอดมิน</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
+    
+    <!-- API URL Status Banner -->
+    <div id="apiUrlBanner" class="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-800">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-plug"></i>
+        </div>
+        <div class="text-sm">
+          <span class="font-bold">สถานะการเชื่อมต่อ:</span> 
+          <span id="apiUrlStatusText" class="text-amber-700">กำลังใช้งานข้อมูลชั่วคราวในเครื่อง (LocalStorage)</span>
+        </div>
+      </div>
+      <button onclick="openApiConfigModal()" class="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700 transition">
+        <i class="fa-solid fa-gear mr-1"></i> ตั้งค่า Apps Script URL
+      </button>
+    </div>
+
+    <!-- Banner Info -->
+    <div class="mb-8 rounded-3xl lavender-gradient p-6 sm:p-8 text-slate-800 shadow-sm border border-lavender-200 relative overflow-hidden">
+      <div class="relative z-10 max-w-2xl">
+        <span class="px-3 py-1 bg-white/80 backdrop-blur-md rounded-full text-lavender-700 font-semibold text-xs border border-lavender-200 inline-block mb-3">
+          ✨ ค้นหารรวดเร็ว คัดลอกง่าย นำไปอ่านเมลได้ทันที
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-bold text-lavender-900 mb-2">ค้นหารายการสั่งซื้ออีเมลของคุณ</h2>
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-4">
+          กรอกชื่อของคุณในช่องด้านล่างเพื่อค้นหาบัญชี Hotmail ที่สั่งซื้อไว้ สามารถกดปุ่มเพื่อคัดลอกข้อมูลในรูปแบบ 
+          <code class="bg-white/90 px-2 py-0.5 rounded text-xs text-lavender-800 font-mono border border-lavender-200">Mail | Pass | Refresh_token | Client_id</code> 
+          แล้วนำไปวางในเว็บ <a href="https://read-mail.me/" target="_blank" class="underline font-medium text-lavender-700 hover:text-lavender-900">read-mail.me</a> ได้เลยทันที!
+        </p>
+      </div>
+      <i class="fa-solid fa-envelope-open text-9xl absolute -right-6 -bottom-8 text-lavender-300/40 pointer-events-none transform -rotate-12"></i>
+    </div>
+
+    <!-- Search Section -->
+    <div class="mb-8">
+      <div class="bg-white p-4 sm:p-6 rounded-2xl border border-lavender-200 card-glow">
+        <label for="searchInput" class="block text-sm font-semibold text-slate-700 mb-2">
+          <i class="fa-solid fa-magnifying-glass text-lavender-500 mr-1.5"></i> ค้นหาด้วยชื่อลูกค้า / ชื่อสั่งซื้อ
+        </label>
+        <div class="relative">
+          <input type="text" id="searchInput" placeholder="พิมพ์ชื่อของคุณ เช่น สมชาย, นก, Customer01..." 
+                 class="w-full pl-11 pr-24 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-lavender-400 focus:bg-white focus:outline-none transition-all text-base">
+          <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <button id="searchBtn" onclick="performSearch()" class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-lavender-600 hover:bg-lavender-700 text-white font-medium rounded-lg text-sm transition-all shadow-sm">
+            ค้นหา
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="space-y-4">
+      <div class="flex items-center justify-between px-1">
+        <h3 id="resultsTitle" class="text-lg font-bold text-slate-800">
+          รายการทั้งหมด (<span id="resultCount">0</span>)
+        </h3>
+        <button onclick="fetchAllData()" class="text-xs text-lavender-600 hover:text-lavender-800 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-rotate"></i> รีเฟรชข้อมูล
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="hidden py-12 text-center">
+        <div class="inline-block w-8 h-8 border-4 border-lavender-200 border-t-lavender-600 rounded-full animate-spin mb-3"></div>
+        <p class="text-slate-500 text-sm">กำลังโหลดข้อมูลจากระบบ...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+        <div class="w-16 h-16 bg-lavender-50 text-lavender-400 rounded-full flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-inbox text-2xl"></i>
+        </div>
+        <h4 class="font-bold text-slate-700 mb-1">ไม่พบข้อมูลรายการสั่งซื้อ</h4>
+        <p class="text-slate-500 text-sm">โปรดตรวจสอบชื่อที่ค้นหา หรือติดต่อแอดมินหากพบบัญชีตกหล่น</p>
+      </div>
+
+      <!-- Cards List -->
+      <div id="cardsList" class="grid grid-cols-1 gap-4">
+        <!-- Cards generated dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Admin Modal -->
+  <div id="adminModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-lavender-200 overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-lavender-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-lavender-600 text-white flex items-center justify-center font-bold">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">แผงจัดการสำหรับแอดมิน</h3>
+            <p class="text-xs text-slate-500">เพิ่มรายการส่งอีเมลให้ลูกค้า</p>
+          </div>
+        </div>
+        <button onclick="toggleAdminModal()" class="w-8 h-8 rounded-full bg-white text-slate-400 hover:text-slate-600 flex items-center justify-center border border-slate-200 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
+        
+        <!-- Tab Selector -->
+        <div class="flex border-b border-slate-200">
+          <button id="tabSingleBtn" onclick="switchAdminTab('single')" class="py-2 px-4 border-b-2 border-lavender-600 font-bold text-lavender-700 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> เพิ่มแบบรายคน
+          </button>
+          <button id="tabBulkBtn" onclick="switchAdminTab('bulk')" class="py-2 px-4 border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-list-check"></i> เพิ่มแบบชุด (Bulk)
+          </button>
+        </div>
+
+        <!-- Form Single -->
+        <form id="singleForm" onsubmit="handleSingleSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้า (สำหรับค้นหา) *</label>
+            <input type="text" id="addCustomerName" required placeholder="เช่น สมชาย_01" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมล (Mail) *</label>
+              <input type="email" id="addMail" required placeholder="example@hotmail.com" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน (Pass) *</label>
+              <input type="text" id="addPass" required placeholder="Password123" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Refresh Token *</label>
+            <textarea id="addRefreshToken" required rows="2" placeholder="M.R3_..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-lavender-400 focus:outline-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Client ID *</label>
+            <input type="text" id="addClientId" required placeholder="8062400e-..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+          </div>
+
+          <button type="submit" id="btnSingleSave" class="w-full py-3 bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-save"></i> บันทึกข้อมูลลง Google Sheets
+          </button>
+        </form>
+
+        <!-- Form Bulk -->
+        <form id="bulkForm" onsubmit="handleBulkSubmit(event)" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้าสำหรับชุดนี้ *</label>
+            <input type="text" id="bulkCustomerName" required placeholder="เช่น บอส_เหมา50เมล" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">วางข้อมูลหลายบรรทัด (รูปแบบ: Mail | Pass | Refresh_token | Client_id) *</label>
+            <textarea id="bulkDataText" required rows="6" placeholder="test1@hotmail.com|pass1|token1|client1&#10;test2@hotmail.com|pass2|token2|client2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-lavender-400 focus:outline-none leading-relaxed"></textarea>
+            <p class="text-[11px] text-slate-400 mt-1">คั่นข้อมูลแต่ละคอลัมน์ด้วยเครื่องหมาย <code>|</code> หรือ Tab</p>
+          </div>
+
+          <button type="submit" id="btnBulkSave" class="w-full py-3 bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-upload"></i> เพิ่มข้อมูลทั้งหมดเข้า Google Sheets
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Config API Modal -->
+  <div id="apiConfigModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-lavender-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i class="fa-solid fa-gear text-lavender-600"></i> ตั้งค่า Google Apps Script Web App URL
+        </h3>
+        <button onclick="closeApiConfigModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <p class="text-xs text-slate-500 leading-relaxed">
+        วาง URL ของ Google Apps Script (Web App) ที่ขึ้นต้นด้วย <code>https://script.google.com/macros/s/.../exec</code> เพื่อเชื่อมต่อกับตาราง Google Sheets ของคุณ
+      </p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Web App URL</label>
+        <input type="url" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-lavender-400 focus:outline-none">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeApiConfigModal()" class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-semibold">ยกเลิก</button>
+        <button onclick="saveApiUrl()" class="px-4 py-2 bg-lavender-600 text-white hover:bg-lavender-700 rounded-xl text-xs font-semibold shadow">บันทึก URL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm border border-slate-700">
+      <div id="toastIcon" class="text-green-400"><i class="fa-solid fa-circle-check"></i></div>
+      <span id="toastMessage">คัดลอกข้อความสำเร็จ</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-400">
+      MUMU READ-HOTMAIL &copy; 2026 — ระบบส่งมอบและอ่านอีเมลอัตโนมัติ
+    </div>
+  </footer>
+
+  <!-- App Script -->
+  <script>
+    // State
+    let orders = [];
+    let scriptAppUrl = localStorage.getItem('MUMU_APPSCRIPT_URL') || '';
+
+    // Sample Fallback Data
+    const dummyOrders = [
+      {
+        id: "1",
+        customerName: "ลูกค้าตัวอย่าง",
+        mail: "demo_mumu01@hotmail.com",
+        pass: "MumuPass2026",
+        refreshToken: "M.R3_S01.example_token_abcdef1234567890_demo_refresh_token_string",
+        clientId: "8062400e-1111-2222-3333-444455556666",
+        date: new Date().toISOString()
+      }
+    ];
+
+    // Initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      updateApiBanner();
+      fetchAllData();
+
+      // Enter key on search
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
+      });
+    });
+
+    // API Banner Status
+    function updateApiBanner() {
+      const banner = document.getElementById('apiUrlBanner');
+      const text = document.getElementById('apiUrlStatusText');
+      
+      if (scriptAppUrl) {
+        banner.className = "mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-800";
+        text.innerHTML = `เชื่อมต่อกับ Google Sheets แล้ว (<code class="text-[11px] font-mono bg-emerald-100 px-1.5 py-0.5 rounded">${scriptAppUrl.substring(0, 35)}...</code>)`;
+      } else {
+        banner.className = "mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-800";
+        text.innerHTML = "ยังไม่ได้เชื่อมต่อ Google Apps Script Web App (กำลังใช้ข้อมูลชั่วคราว)";
+      }
+    }
+
+    // Modal API Settings
+    function openApiConfigModal() {
+      document.getElementById('apiUrlInput').value = scriptAppUrl;
+      document.getElementById('apiConfigModal').classList.remove('hidden');
+    }
+
+    function closeApiConfigModal() {
+      document.getElementById('apiConfigModal').classList.add('hidden');
+    }
+
+    function saveApiUrl() {
+      const url = document.getElementById('apiUrlInput').value.trim();
+      scriptAppUrl = url;
+      localStorage.setItem('MUMU_APPSCRIPT_URL', url);
+      updateApiBanner();
+      closeApiConfigModal();
+      showToast('บันทึก Web App URL เรียบร้อยแล้ว', 'success');
+      fetchAllData();
+    }
+
+    // Fetch Data from Google Sheets API or Local
+    async function fetchAllData() {
+      showLoading(true);
+      if (scriptAppUrl) {
+        try {
+          const response = await fetch(scriptAppUrl);
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            orders = data;
+          } else {
+            console.error('Data format error:', data);
+            orders = JSON.parse(localStorage.getItem('MUMU_LOCAL_ORDERS')) || dummyOrders;
+          }
+        } catch (error) {
+          console.error('Error fetching Google Sheets data:', error);
+          showToast('ไม่สามารถดึงข้อมูลจาก Sheets ได้ แสดงข้อมูลล่าสุดในเครื่อง', 'error');
+          orders = JSON.parse(localStorage.getItem('MUMU_LOCAL_ORDERS')) || dummyOrders;
+        }
+      } else {
+        orders = JSON.parse(localStorage.getItem('MUMU_LOCAL_ORDERS')) || dummyOrders;
+      }
+      
+      showLoading(false);
+      performSearch();
+    }
+
+    // Perform Search & Filter
+    function performSearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      let filtered = orders;
+
+      if (query !== '') {
+        filtered = orders.filter(item => 
+          (item.customerName && item.customerName.toLowerCase().includes(query)) ||
+          (item.mail && item.mail.toLowerCase().includes(query))
+        );
+      }
+
+      renderCards(filtered);
+    }
+
+    // Render Cards
+    function renderCards(list) {
+      const cardsList = document.getElementById('cardsList');
+      const emptyState = document.getElementById('emptyState');
+      const resultCount = document.getElementById('resultCount');
+
+      resultCount.textContent = list.length;
+      cardsList.innerHTML = '';
+
+      if (list.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      list.forEach(item => {
+        const rawFormat = `${item.mail}|${item.pass}|${item.refreshToken}|${item.clientId}`;
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl p-5 border border-lavender-200 card-glow transition-all hover:border-lavender-400 space-y-4";
+        
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-full bg-lavender-100 text-lavender-700 font-bold flex items-center justify-center text-sm">
+                <i class="fa-solid fa-user"></i>
+              </span>
+              <div>
+                <h4 class="font-bold text-slate-800 text-base">${escapeHtml(item.customerName || 'ไม่ระบุชื่อ')}</h4>
+                <p class="text-[11px] text-slate-400">${item.date ? new Date(item.date).toLocaleString('th-TH') : ''}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <button onclick="copyToClipboard('${escapeJs(rawFormat)}', 'คัดลอกข้อมูลทั้งแถบสำเร็จ')" 
+                      class="px-3.5 py-1.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-medium text-xs shadow-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-copy"></i> คัดลอกแบบเต็ม
+              </button>
+              <a href="https://read-mail.me/" target="_blank" 
+                 class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-lavender-100 text-slate-600 hover:text-lavender-700 font-medium text-xs transition flex items-center gap-1.5">
+                <i class="fa-solid fa-envelope-open text-lavender-600"></i> อ่านเมล
+              </a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+              <span class="text-slate-400 font-medium w-16">Mail:</span>
+              <span class="font-mono text-slate-800 truncate flex-1 mx-2 select-all">${escapeHtml(item.mail)}</span>
+              <button onclick="copyToClipboard('${escapeJs(item.mail)}', 'คัดลอกอีเมลแล้ว')" class="text-slate-400 hover:text-lavender-600 px-1">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+              <span class="text-slate-400 font-medium w-16">Pass:</span>
+              <span class="font-mono text-slate-800 truncate flex-1 mx-2 select-all">${escapeHtml(item.pass)}</span>
+              <button onclick="copyToClipboard('${escapeJs(item.pass)}', 'คัดลอกรหัสผ่านแล้ว')" class="text-slate-400 hover:text-lavender-600 px-1">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+              <span class="text-slate-400 font-medium w-16">Refresh:</span>
+              <span class="font-mono text-slate-800 truncate flex-1 mx-2 select-all">${escapeHtml(item.refreshToken)}</span>
+              <button onclick="copyToClipboard('${escapeJs(item.refreshToken)}', 'คัดลอก Refresh Token แล้ว')" class="text-slate-400 hover:text-lavender-600 px-1">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+              <span class="text-slate-400 font-medium w-16">Client ID:</span>
+              <span class="font-mono text-slate-800 truncate flex-1 mx-2 select-all">${escapeHtml(item.clientId)}</span>
+              <button onclick="copyToClipboard('${escapeJs(item.clientId)}', 'คัดลอก Client ID แล้ว')" class="text-slate-400 hover:text-lavender-600 px-1">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        cardsList.appendChild(card);
+      });
+    }
+
+    // Single Form Submit
+    async function handleSingleSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSingleSave');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> กำลังบันทึก...`;
+
+      const newOrder = {
+        id: Date.now().toString(),
+        customerName: document.getElementById('addCustomerName').value.trim(),
+        mail: document.getElementById('addMail').value.trim(),
+        pass: document.getElementById('addPass').value.trim(),
+        refreshToken: document.getElementById('addRefreshToken').value.trim(),
+        clientId: document.getElementById('addClientId').value.trim(),
+        date: new Date().toISOString()
+      };
+
+      if (scriptAppUrl) {
+        try {
+          await fetch(scriptAppUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newOrder)
+          });
+          showToast('บันทึกข้อมูลเข้า Google Sheets เรียบร้อย', 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('เกิดข้อผิดพลาดในการบันทึกลง Sheets', 'error');
+        }
+      } else {
+        orders.unshift(newOrder);
+        localStorage.setItem('MUMU_LOCAL_ORDERS', JSON.stringify(orders));
+        showToast('บันทึกข้อมูลในเครื่องเรียบร้อย (ยังไม่ได้ต่อ Sheets)', 'success');
+      }
+
+      document.getElementById('singleForm').reset();
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-save"></i> บันทึกข้อมูลลง Google Sheets`;
+      toggleAdminModal();
+      setTimeout(fetchAllData, 1000);
+    }
+
+    // Bulk Form Submit
+    async function handleBulkSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnBulkSave');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> กำลังส่งข้อมูล...`;
+
+      const customerName = document.getElementById('bulkCustomerName').value.trim();
+      const rawText = document.getElementById('bulkDataText').value.trim();
+      const lines = rawText.split('\n');
+
+      let count = 0;
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.split(/[|\t]/).map(p => p.trim());
+        if (parts.length >= 4) {
+          const orderObj = {
+            id: (Date.now() + count).toString(),
+            customerName: customerName,
+            mail: parts[0],
+            pass: parts[1],
+            refreshToken: parts[2],
+            clientId: parts[3],
+            date: new Date().toISOString()
+          };
+
+          if (scriptAppUrl) {
+            try {
+              await fetch(scriptAppUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderObj)
+              });
+            } catch (err) { console.error(err); }
+          } else {
+            orders.unshift(orderObj);
+          }
+          count++;
+        }
+      }
+
+      if (!scriptAppUrl) {
+        localStorage.setItem('MUMU_LOCAL_ORDERS', JSON.stringify(orders));
+      }
+
+      showToast(`เพิ่มข้อมูลชุดจำนวน ${count} รายการเรียบร้อยแล้ว`, 'success');
+      document.getElementById('bulkForm').reset();
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-upload"></i> เพิ่มข้อมูลทั้งหมดเข้า Google Sheets`;
+      toggleAdminModal();
+      setTimeout(fetchAllData, 1500);
+    }
+
+    // Utility Helpers
+    function toggleAdminModal() {
+      document.getElementById('adminModal').classList.toggle('hidden');
+    }
+
+    function switchAdminTab(tab) {
+      const singleForm = document.getElementById('singleForm');
+      const bulkForm = document.getElementById('bulkForm');
+      const tabSingleBtn = document.getElementById('tabSingleBtn');
+      const tabBulkBtn = document.getElementById('tabBulkBtn');
+
+      if (tab === 'single') {
+        singleForm.classList.remove('hidden');
+        bulkForm.classList.add('hidden');
+        tabSingleBtn.className = "py-2 px-4 border-b-2 border-lavender-600 font-bold text-lavender-700 text-sm flex items-center gap-2";
+        tabBulkBtn.className = "py-2 px-4 border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700 text-sm flex items-center gap-2";
+      } else {
+        singleForm.classList.add('hidden');
+        bulkForm.classList.remove('hidden');
+        tabBulkBtn.className = "py-2 px-4 border-b-2 border-lavender-600 font-bold text-lavender-700 text-sm flex items-center gap-2";
+        tabSingleBtn.className = "py-2 px-4 border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700 text-sm flex items-center gap-2";
+      }
+    }
+
+    function showLoading(show) {
+      const loading = document.getElementById('loadingState');
+      if (show) loading.classList.remove('hidden');
+      else loading.classList.add('hidden');
+    }
+
+    function copyToClipboard(text, message = 'คัดลอกเรียบร้อย') {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(message, 'success');
+      }).catch(err => {
+        showToast('ไม่สามารถคัดลอกได้', 'error');
+      });
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMessage.textContent = msg;
+      if (type === 'success') {
+        toastIcon.innerHTML = `<i class="fa-solid fa-circle-check text-green-400"></i>`;
+      } else {
+        toastIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-400"></i>`;
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+  </script>
+</body>
+</html>
